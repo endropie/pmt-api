@@ -19,3 +19,12 @@ $router->get('/', function () use ($router) {
         "build" => $router->app->version(),
     ]);
 });
+
+$router->get('/version', function () use ($router) {
+    return response()->json([
+        "name" => "OK",
+    ]);
+});
+
+$router->app->microservice->router('tenant');
+$router->app->microservice->router('auth');

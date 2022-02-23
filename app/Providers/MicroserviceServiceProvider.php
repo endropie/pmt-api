@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-class AppServiceProvider extends ServiceProvider
+class MicroserviceServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
@@ -19,12 +19,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton('microservice', function ($app) {
-            return new \App\Extensions\Microservice\Factory($app);
+            return (new \App\Extensions\Microservice\Factory($app));
         });
     }
 
     public function boot()
     {
-        $this->app['microservice']->router();
+        $this->app['microservice']->routing();
     }
 }
