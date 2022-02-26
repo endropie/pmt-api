@@ -11,6 +11,10 @@ class Provider
     protected $host;
     protected $prefix;
 
+    protected $headers = [
+        'accept', 'accept-language', 'accept-encoding', 'accept-length', 'content-type'
+    ];
+
 
     public function __construct($name, $service, $option = [])
     {
@@ -28,25 +32,24 @@ class Provider
     public function handle($callback = false)
     {
 
-        $method = $this->app['request']->method();
         $pathInfo = $this->app['request']->getPathInfo();
-        $function = strtolower($method);
+        $method = $this->app['request']->method();
 
         if ($callback) $callback($this);
 
-        $client = $this->app['http']->withHeaders(['accept' => 'Application/json']);
-        if ($token = $this->app['request']->bearerToken()) $client->withToken($token);
-
+        
+        $client = $this->client();
         $url  = $this->requestURI();
         $data = $this->app['request']->all();
 
-        // dd('INI HANDLE ROUTER', $url, $pathInfo);
-        $this->app['router']->addRoute($method, $pathInfo, function () use ($client, $function, $url, $data) {
+        $this->app['router']->addRoute($method, $pathInfo, function () use ($client, $method, $url, $data) {
             try {
-                $response = $client->{$function}($url, $data);
-                $response->throw();
+                // dd($data, $url);
+                $response = $client->{strtolower($method)}($url, $data);
+
                 return response($response->getBody(), $response->getStatusCode(), $response->headers());
-            } catch (\Throwable $t) {
+
+            } catch (\Throw $t) {
                 $info = env('APP_DEBUG', false) ? " [" . $t->getMessage() . ']' : '';
                 return abort(504, "END POINT [SERVER] TIMEOUT." . $info);
             }
@@ -56,10 +59,10 @@ class Provider
     protected function requestURI()
     {
         $prefixRouter = $this->service->prefix;
-        $prefixRouter =  strlen($prefixRouter) && str_starts_with($prefixRouter, '/') ? $prefixRouter : "/$prefixRouter";
+        $prefixRouter =  strlen($prefixRouter) && !str_starts_with($prefixRouter, '/') ? "/$prefixRouter" : $prefixRouter;
 
         $prefixProvider = $this->prefix();
-        $prefixProvider = strlen($prefixProvider) && str_starts_with($prefixProvider, '/') ? $prefixProvider : "/$prefixProvider";
+        $prefixProvider = strlen($prefixProvider) && !str_starts_with($prefixProvider, '/') ? "/$prefixProvider" : $prefixProvider;
 
         $path = $prefixProvider . str_ireplace("$prefixRouter/$this->name", '', request()->getPathInfo());
 
@@ -79,5 +82,20 @@ class Provider
         }
 
         return $this->host;
+    }
+
+    protected function client()
+    {
+        $headers = collect($this->headers)
+            ->mapWithKeys(function ($item) {
+                if (!$this->app->request->header($item)) return[];
+                return [$item =>  $this->app->request->header($item)];
+            })->toArray();
+
+        $client = $this->app['http']->withHeaders($headers);
+        
+        if ($token = $this->app['request']->bearerToken()) $client->withToken($token);
+
+        return $client;
     }
 }

@@ -46,7 +46,7 @@ class Factory
     protected function provider()
     {
         $prefix = $this->prefix;
-        $prefix = strlen($prefix) && str_starts_with($prefix, '/') ? "$prefix" : "/$prefix";
+        $prefix = strlen($prefix) && !str_starts_with($prefix, '/') ? "/$prefix" : "$prefix";
         
         $arr = explode('/', request()->getPathInfo(), 4);
 
@@ -64,10 +64,10 @@ class Factory
 
         if ($module) {
             $prefix = $this->prefix;
-            $prefix = str_starts_with($prefix, '/') ? $prefix : "/$prefix";
+            $prefix = strlen($prefix) && !str_starts_with($prefix, '/') ? "/$prefix" : $prefix;
 
             $prefixModule = env("MS_PREFIX_" . strtoupper($module), null) ?? $this->providers;
-            $prefixModule = str_starts_with($prefixModule, '/') ? $prefixModule : "/$prefixModule";
+            $prefixModule = strlen($prefixModule) && !str_starts_with($prefixModule, '/') ? "/$prefixModule" : $prefixModule;
 
             return $prefixModule . str_ireplace("$prefix/$module", '', request()->getPathInfo());
         }
