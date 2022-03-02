@@ -37,14 +37,14 @@ class Provider
 
         if ($callback) $callback($this);
 
-        
+
         $client = $this->client();
         $url  = $this->requestURI();
         $data = $this->app['request']->all();
 
         $this->app['router']->addRoute($method, $pathInfo, function () use ($client, $method, $url, $data) {
             try {
-                // dd($data, $url);
+
                 $response = $client->{strtolower($method)}($url, $data);
 
                 return response($response->getBody(), $response->getStatusCode(), $response->headers());
@@ -73,10 +73,10 @@ class Provider
     {
         return $this->prefix;
     }
-    
+
     public function host()
     {
-        if (!$this->host) 
+        if (!$this->host)
         {
             throw new \Exception('Host Microservice[' . $this->name . '] undefined.');
         }
@@ -86,16 +86,28 @@ class Provider
 
     protected function client()
     {
-        $headers = collect($this->headers)
+        $headers = collect($this->getAllowedHeaders())
             ->mapWithKeys(function ($item) {
                 if (!$this->app->request->header($item)) return[];
-                return [$item =>  $this->app->request->header($item)];
+                return [$item => $this->app->request->header($item)];
             })->toArray();
 
         $client = $this->app['http']->withHeaders($headers);
-        
+
         if ($token = $this->app['request']->bearerToken()) $client->withToken($token);
 
         return $client;
+    }
+
+    protected function getAllowedHeaders()
+    {
+        $headers = $this->headers;
+
+        foreach (array_keys($this->app->request->headers->all()) as $key) 
+        {
+            if (str_starts_with(strtolower($key), 'x-')) $headers[] = $key;
+        }
+
+        return $headers;
     }
 }

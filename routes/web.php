@@ -26,5 +26,5 @@ $router->get('/version', function () use ($router) {
     ]);
 });
 
-$router->app->microservice->router('tenant');
+$router->app->microservice->router('common');
 $router->app->microservice->router('auth');
